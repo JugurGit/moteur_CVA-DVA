@@ -1,0 +1,69 @@
+# =========================
+# Simulation master config
+# =========================
+seed: 42
+
+horizon_years: 5.0        # T
+dt_years: 0.0833333333    # 1/12 ≈ mensuel
+n_scenarios: 5000
+
+rates:
+  r0: 0.02                 # 2% short rate initial
+  kappa: 0.60
+  sigma: 0.01              # 1% vol (an^(-1/2))
+  theta_type: flat         # flat or piecewise
+  theta_flat: 0.02         # si flat: niveau cible de long terme
+
+discount_curve:
+  type: flat               # flat or points
+  flat_zero_rate: 0.02     # si flat: DF(0,t)=exp(-z*t)
+  points: []               # si points: liste [ {t: 0.5, df: 0.99}, ... ]
+
+credit_defaults:
+  IG:
+    LGD: 0.40
+    spread0_bps_min: 70
+    spread0_bps_max: 120
+    kappa_lambda: 1.0
+    sigma_lambda: 0.30
+  BBB:
+    LGD: 0.50
+    spread0_bps_min: 120
+    spread0_bps_max: 220
+    kappa_lambda: 1.0
+    sigma_lambda: 0.35
+  BB:
+    LGD: 0.60
+    spread0_bps_min: 220
+    spread0_bps_max: 380
+    kappa_lambda: 1.0
+    sigma_lambda: 0.40
+
+bank:
+  LGD: 0.60
+  spread0_bps: 80          # banque “saine” ~ 80 bps
+  kappa_lambda: 1.0
+  sigma_lambda: 0.30
+
+portfolio:
+  # 20 contreparties, tu peux ajuster notional/sens/rating/δ (en bps)
+  - { cpty_id: CP01, rating: IG,  notional: 10000000, direction: payer_fix,    delta_coupon_bps: +25 }
+  - { cpty_id: CP02, rating: IG,  notional: 12000000, direction: receiver_fix, delta_coupon_bps: -15 }
+  - { cpty_id: CP03, rating: BBB, notional: 15000000, direction: payer_fix,    delta_coupon_bps: +40 }
+  - { cpty_id: CP04, rating: IG,  notional:  8000000, direction: receiver_fix, delta_coupon_bps: +10 }
+  - { cpty_id: CP05, rating: BB,  notional: 20000000, direction: payer_fix,    delta_coupon_bps: -30 }
+  - { cpty_id: CP06, rating: IG,  notional:  9000000, direction: payer_fix,    delta_coupon_bps: +5  }
+  - { cpty_id: CP07, rating: BBB, notional: 11000000, direction: receiver_fix, delta_coupon_bps: +35 }
+  - { cpty_id: CP08, rating: IG,  notional: 14000000, direction: payer_fix,    delta_coupon_bps: -20 }
+  - { cpty_id: CP09, rating: BB,  notional:  7000000, direction: receiver_fix, delta_coupon_bps: +50 }
+  - { cpty_id: CP10, rating: BBB, notional: 13000000, direction: payer_fix,    delta_coupon_bps: -10 }
+  - { cpty_id: CP11, rating: IG,  notional: 10000000, direction: payer_fix,    delta_coupon_bps: +15 }
+  - { cpty_id: CP12, rating: IG,  notional:  9000000, direction: receiver_fix, delta_coupon_bps: -25 }
+  - { cpty_id: CP13, rating: BBB, notional: 16000000, direction: payer_fix,    delta_coupon_bps: +30 }
+  - { cpty_id: CP14, rating: IG,  notional: 10500000, direction: receiver_fix, delta_coupon_bps: +0  }
+  - { cpty_id: CP15, rating: BB,  notional: 18000000, direction: payer_fix,    delta_coupon_bps: +45 }
+  - { cpty_id: CP16, rating: IG,  notional:  9500000, direction: payer_fix,    delta_coupon_bps: -5  }
+  - { cpty_id: CP17, rating: BBB, notional: 12500000, direction: receiver_fix, delta_coupon_bps: -35 }
+  - { cpty_id: CP18, rating: IG,  notional: 14500000, direction: payer_fix,    delta_coupon_bps: +20 }
+  - { cpty_id: CP19, rating: BB,  notional:  7500000, direction: receiver_fix, delta_coupon_bps: -40 }
+  - { cpty_id: CP20, rating: BBB, notional: 13500000, direction: payer_fix,    delta_coupon_bps: +10 }
