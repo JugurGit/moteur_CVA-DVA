@@ -41,7 +41,10 @@ st.markdown("### 🧩 Contexte — De Banque Palatine à une démo “reproducti
 
 st.info(
     """
-Ce projet est une **démo technique** inspirée des travaux réalisés chez **Banque Palatine** (équipe Risques / XVA).
+Lors de mon stage de fin d’études chez Banque Palatine (Département RISF),
+ j’ai travaillé sur le calcul des métriques de risque de contrepartie, CVA et DVA, ainsi que sur leurs sensibilités.
+Le but était de réconcilier ses chiffres avec ceux du moteur AmerisC (moteur de calcul de risque de contrepartie de Natixis).
+ Ce projet est donc une **démo technique** inspirée des travaux réalisés chez **Banque Palatine**.
 L’objectif est de **recréer une chaîne de calcul CVA/DVA** dans un cadre **structuré comme en production** :
 
 - **Génération de scénarios** (taux) via **Hull–White 1F++**  
@@ -71,7 +74,7 @@ with cB:
     st.markdown("**2) Simulation & expositions**")
     st.caption("Trajectoires • cashflows • EPE/ENE • profils temporels")
 with cC:
-    st.markdown("**3) CVA/DVA “reporting-ready”**")
+    st.markdown("**3) CVA/DVA calculés**")
     st.caption("Discounting • PD • agrégation buckets • résultats exploitables")
 with cD:
     st.markdown("**4) Explicabilité & traçabilité**")
@@ -103,7 +106,7 @@ st.divider()
 st.markdown(
     """
 ### 🧭 Navigation
-Utilise les pages à gauche :
+Utilisez les pages à gauche :
 
 - **Overview** : résumé + état courant + KPIs (CVA, DVA, EPE, ENE)
 - **Market / Models** : hypothèses simulées (HW 1F++ / log-OU), paramètres, seeds
