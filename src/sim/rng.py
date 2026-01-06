@@ -1,10 +1,3 @@
-"""
-Random generators wrapper.
-
-We centralize RNG creation so all modules share the same NumPy Generator
-(ensures reproducibility across runs when a seed is provided).
-"""
-
 from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
@@ -21,7 +14,6 @@ class RNG:
     def gen(self) -> np.random.Generator:
         return self._gen
 
-    # convenience methods (re-expose a few)
     def normal(self, size, mean=0.0, std=1.0) -> np.ndarray:
         return self._gen.normal(loc=mean, scale=std, size=size)
 

@@ -5,61 +5,122 @@ import streamlit as st
 
 from app_lib.style import apply_page_config, apply_css
 
+# ---------------------------------------------------------------------
+# 0) Setup UI (config + CSS)
+# ---------------------------------------------------------------------
+# On centralise ici le thème, le layout, les styles "pro", etc.
 apply_page_config(title="Réplication du moteur CVA/DVA", icon="📊")
 apply_css()
 
-st.title("📊 Réplication du moteur CVA/DVA")
+# ---------------------------------------------------------------------
+# 1) Sidebar globale (comme dans app.py)
+# ---------------------------------------------------------------------
+# Objectif : donner un point d’entrée clair (contexte + mode d’usage),
+# et stocker quelques toggles dans session_state pour les autres pages.
+with st.sidebar:
+    st.markdown("## XVA Lab")
+    st.caption("CVA/DVA • Hull–White 1F++ • log-OU • Shapley • Tracking")
 
+    # Mode "tracking" : utile si tu historises des runs / snapshots dans l'app
+    tracking = st.toggle("📌 Portfolio tracking mode", value=True)
+    st.session_state["tracking_mode"] = tracking
+
+    # Optionnel : un mode verbose global (pratique si tu veux afficher plus de logs)
+    verbose = st.toggle("🧪 Mode verbose", value=False)
+    st.session_state["verbose_mode"] = verbose
+
+    st.divider()
+
+# ---------------------------------------------------------------------
+# 2) Page content (marketing / mémoire) — structuré comme app.py
+# ---------------------------------------------------------------------
+st.title("📊 Réplication du moteur CVA/DVA — Démo technique")
+st.caption("Scénarios taux & crédit • Expositions EPE/ENE • CVA/DVA • Explain (Shapley) • Export & traçabilité")
+
+st.markdown("### 🧩 Contexte — De Banque Palatine à une démo “reproductible”")
+
+st.info(
+    """
+Ce projet est une **démo technique** inspirée des travaux réalisés chez **Banque Palatine** (équipe Risques / XVA).
+L’objectif est de **recréer une chaîne de calcul CVA/DVA** dans un cadre **structuré comme en production** :
+
+- **Génération de scénarios** (taux) via **Hull–White 1F++**  
+- **Modélisation des intensités de défaut** via **log-OU** (contreparties **et** banque)  
+- **Expositions** (**EPE / ENE**) puis calcul des **legs** et **totaux** de **CVA / DVA**  
+- **Traçabilité** : logs, snapshots, exports (CSV / JSON / PNG) pour reproduire et documenter un run
+""",
+    icon="🏦",
+)
+
+st.warning(
+    """
+Je ne dispose pas des **données internes** ni de la **documentation** nécessaires
+pour illustrer les traitements de manière “réelle”.
+Le projet remplace donc ces entrées par des données **contrôlées / simulées**.
+""",
+    icon="⚠️",
+)
+
+st.markdown("### 🎯 Ce que démontre ce mini-projet (workflow end-to-end)")
+
+cA, cB, cC, cD = st.columns(4)
+with cA:
+    st.markdown("**1) Hypothèses maîtrisées**")
+    st.caption("Marché simulé • seeds • horizons • paramètres modèles")
+with cB:
+    st.markdown("**2) Simulation & expositions**")
+    st.caption("Trajectoires • cashflows • EPE/ENE • profils temporels")
+with cC:
+    st.markdown("**3) CVA/DVA “reporting-ready”**")
+    st.caption("Discounting • PD • agrégation buckets • résultats exploitables")
+with cD:
+    st.markdown("**4) Explicabilité & traçabilité**")
+    st.caption("Shapley • contributions • exports • comparaisons de runs")
+
+st.success(
+    """
+**En résumé** : une réplique “mini moteur” qui illustre **la même démarche que chez Banque Palatine** :
+structurer un calcul XVA avec des inputs maîtrisés, des sorties traçables, et une lecture claire des **sensibilités**
+(exposition, discounting, probabilités de défaut).
+""",
+    icon="✅",
+)
+
+with st.expander("🔎 Comment j’ai structuré l’approche (logique “production / audit”)", expanded=False):
+    st.markdown(
+        """
+- **Séparation des responsabilités** : modèles/simulation (lib) vs **UI** (Streamlit) vs **stockage** (runs, snapshots).
+- **Chaîne calcul claire** : scénarios → expositions → legs CVA/DVA → agrégation → export.
+- **Explainability** : décomposition **Shapley** pour relier un total CVA/DVA à ses principaux contributeurs.
+"""
+    )
+
+st.divider()
+
+# ---------------------------------------------------------------------
+# 3) Navigation (comme ton app.py FRTB / IR Lab)
+# ---------------------------------------------------------------------
 st.markdown(
     """
-Ce mini-projet **reproduit, à des fins pédagogiques, un moteur de calcul CVA/DVA** inspiré des travaux réalisés chez **Banque Palatine**.
+### 🧭 Navigation
+Utilise les pages à gauche :
 
-Faute de données de marché complètes, les entrées nécessaires sont **simulées** :
-- **Scénarios de taux** via un modèle **Hull–White 1F++**
-- **Intensités de défaut** via un modèle **log-OU** (contreparties **et** banque)
+- **Overview** : résumé + état courant + KPIs (CVA, DVA, EPE, ENE)
+- **Market / Models** : hypothèses simulées (HW 1F++ / log-OU), paramètres, seeds
+- **Run / Simulation** : exécution d’un run, suivi logs, sauvegarde des artefacts
+- **Exposures** : profils EPE/ENE (agrégé / par contrepartie)
+- **CVA / DVA** : legs (DF, PD, expo) + totaux + vues par buckets
+- **Analytics** : Shapley / contributions (DF, expo, PD) par bucket et/ou contrepartie
+- **Export** : CSV / JSON / PNG pour reporting et historique
 
-Le moteur calcule ensuite :
-- les **expositions** (**EPE / ENE**),
-- les **legs** et **totaux** de **CVA / DVA**, avec **agrégation par buckets**,
-- l’**export** des résultats (**CSV / JSON / PNG**).
-
-Enfin, l’application propose des analyses complémentaires :
-- **décomposition de type Shapley** des contributions (**DF**, **expositions**, **probabilités de défaut**).
+> Astuce : si le moteur imprime beaucoup, on capture les logs et on les affiche pour garder une trace du run.
 """
 )
 
-
-st.markdown(
-    """
-### 🧭 Parcours conseillé (3–5 minutes)
-
-1. **Overview**
-   - Vérifier l’**état du run courant** (date, modèle, taille de simulation).
-   - Repèrer les **KPIs clés** (CVA, DVA, EPE, ENE) pour avoir un point de départ.
-
-2. **Market / Models**
-   - Consulter les **hypothèses de marché simulées** :
-     - courbes / paramètres **Hull–White 1F++**
-     - intensités **log-OU** (contreparties + banque)
-   - Ajuster si besoin les paramètres (vol, mean reversion, seeds, horizons).
-
-3. **Run / Simulation**
-   - Lancer un **run complet** (ou recharger un run existant si l’app le permet).
-   - Surveiller les logs/infos de calcul et valider que l’export est généré.
-
-4. **Exposures**
-   - Visualiser les profils **EPE / ENE** (par contrepartie et/ou agrégé).
-   - Identifier rapidement les **drivers** (maturité, notionnel, sens payer/receiver).
-
-5. **CVA / DVA**
-   - Examiner les **legs** (discounting, PD, exposition) puis les **totaux**.
-   - Passer en vue **bucket** pour comprendre l’agrégation et les contributions.
-
-6. **Analytics**
-   - **Shapley** : décomposer les contributions (DF / exposition / PD) par bucket.
-
-7. **Export**
-   - Récupèrer les résultats (CSV/JSON/PNG) pour garder une trace ou alimenter un reporting.
-"""
-)
-
+# ---------------------------------------------------------------------
+# 4) (Optionnel) Affichage des logs du dernier run, si disponibles
+# ---------------------------------------------------------------------
+# Si tes pages "Run" stockent des logs dans session_state, ce bloc les rend accessibles depuis l'accueil.
+if st.session_state.get("last_logs"):
+    with st.expander("Afficher les logs du dernier run", expanded=False):
+        st.code(st.session_state["last_logs"], language="text")

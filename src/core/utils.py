@@ -1,7 +1,5 @@
 """
-Utilities: RNG, numeric helpers, sanity checks.
-
-Intended to be lightweight and dependency-free (NumPy only).
+Utilitaires : RNG, helpers numériques, vérifications de cohérence.
 """
 
 from __future__ import annotations
@@ -12,66 +10,66 @@ from typing import Iterable, Tuple
 import numpy as np
 
 
-# ===== Randomness / Seeds =====================================================
+# ===== Aléatoire / Seeds ======================================================
 
 def make_rng(seed: int | None = None) -> np.random.Generator:
     """
-    Create a NumPy Generator with an optional seed.
-    Use ONE rng per run and pass it explicitly to all simulators.
+    Crée un générateur NumPy (Generator) avec une graine optionnelle.
     """
     if seed is None:
         return np.random.default_rng()
     return np.random.default_rng(seed)
 
 
-# ===== Numerics ===============================================================
+# ===== Numérique ==============================================================
 
 def trapz_increment(y_prev: float, y_curr: float, dt: float) -> float:
     """
-    Trapezoidal increment for ∫ y dt over a single step [t, t+dt].
-    Returns 0.5 * (y_prev + y_curr) * dt
+    Incrément trapèze pour approximer ∫ y dt sur un pas [t, t+dt].
+
+    Retourne : 0.5 * (y_prev + y_curr) * dt
     """
     return 0.5 * (y_prev + y_curr) * dt
 
 
 def trapz(x: np.ndarray, y: np.ndarray) -> float:
     """
-    Trapezoidal rule for ∫ y(x) dx over the full grid.
-    Thin wrapper over numpy.trapz with shape/type assertions.
+    Règle des trapèzes pour approximer ∫ y(x) dx sur toute la grille.
+
+    Wrapper léger autour de numpy.trapz, avec assertions sur forme/type.
     """
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
     if x.ndim != 1 or y.ndim != 1:
-        raise ValueError("trapz expects 1D arrays")
+        raise ValueError("trapz attend des tableaux 1D")
     if x.shape[0] != y.shape[0]:
-        raise ValueError("trapz: x and y must have same length")
+        raise ValueError("trapz: x et y doivent avoir la même longueur")
     return float(np.trapz(y, x))
 
 
-# ===== Sanity checks / assertions ============================================
+# ===== Contrôles / assertions =================================================
 
 def assert_finite(name: str, arr: np.ndarray) -> None:
-    """Raise if any NaN/Inf in arr."""
+    """Lève une erreur si arr contient au moins un NaN/Inf."""
     arr = np.asarray(arr)
     if not np.isfinite(arr).all():
-        raise ValueError(f"{name}: contains NaN/Inf")
+        raise ValueError(f"{name}: contient NaN/Inf")
 
 
 def assert_shape(name: str, arr: np.ndarray, expected: Tuple[int, ...]) -> None:
     """
-    Assert exact shape. Use -1 as wildcard for any length on that axis.
-    Example: assert_shape("rates", rates, (N, -1)) where rates.shape==(N,K)
+    Vérifie la forme exacte (shape). 
     """
     arr = np.asarray(arr)
     if arr.ndim != len(expected):
-        raise ValueError(f"{name}: expected {len(expected)}D, got {arr.ndim}D")
+        raise ValueError(f"{name}: attendu {len(expected)}D, obtenu {arr.ndim}D")
     for i, (got, exp) in enumerate(zip(arr.shape, expected)):
         if exp != -1 and got != exp:
-            raise ValueError(f"{name}: axis {i} expected {exp}, got {got}")
+            raise ValueError(f"{name}: axe {i} attendu {exp}, obtenu {got}")
 
 
 def is_monotone_decreasing(x: Iterable[float]) -> bool:
-    """True if strictly non-increasing (allows equal)."""
+    """True si x est non-croissant (strictement décroissant ou constant)."""
     prev = None
     for v in x:
         if prev is not None and v > prev + 1e-14:
@@ -80,7 +78,7 @@ def is_monotone_decreasing(x: Iterable[float]) -> bool:
     return True
 
 
-# ===== Small helpers ==========================================================
+# ===== Petits helpers =========================================================
 
 @dataclass(frozen=True)
 class Stats1D:
@@ -89,8 +87,9 @@ class Stats1D:
     min: float
     max: float
 
+
 def stats1d(a: np.ndarray) -> Stats1D:
-    """Quick descriptive stats for logging/debug."""
+    """Stats descriptives rapides (log/debug)."""
     a = np.asarray(a, dtype=float).ravel()
     return Stats1D(
         mean=float(np.mean(a)),

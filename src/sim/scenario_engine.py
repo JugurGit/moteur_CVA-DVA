@@ -1,13 +1,13 @@
 """
-Portfolio simulator (no WWR, no dependence):
-- Simulate HW1F++ rate paths once
-- For the bank: simulate Log-OU credit, average PD/S over scenarios
-- For each counterparty:
-    * simulate Log-OU credit (independent), average PD/S
-    * compute EPE/ENE from rate paths
-    * compute CVA/DVA legs and aggregates
+Simulateur de portefeuille (sans WWR, sans dépendances entre risques) :
+- On simule une seule fois les trajectoires de taux HW1F++
+- Pour la banque : on simule un crédit Log-OU et on moyenne PD/S sur les scénarios
+- Pour chaque contrepartie :
+    * on simule un crédit Log-OU (indépendant), on moyenne PD/S
+    * on calcule EPE/ENE à partir des trajectoires de taux
+    * on calcule les jambes CVA/DVA et les agrégats
 
-Returns structured dicts ready for export (step 10).
+Retourne des dictionnaires structurés prêts pour export.
 """
 
 from __future__ import annotations
@@ -36,21 +36,22 @@ class Simulator:
     rng: np.random.Generator
     df_curve_on_grid: DFCurveOnGrid
 
-    # internal caches
-    _rates_paths: np.ndarray | None = None          # (N, K+1)
-    _bank_PD: np.ndarray | None = None              # (K+1,)
-    _bank_S: np.ndarray | None = None               # (K+1,)
+    # caches internes (pour éviter de re-simuler inutilement)
+    _rates_paths: np.ndarray | None = None          
+    _bank_PD: np.ndarray | None = None             
+    _bank_S: np.ndarray | None = None               
 
-    # ---------- core helpers --------------------------------------------------
 
     def _ensure_rate_paths(self, N: int, r0: float) -> np.ndarray:
+        """Garantit que les chemins de taux (N scénarios) sont simulés et en cache."""
         if self._rates_paths is None or self._rates_paths.shape[0] != N:
             self._rates_paths = self.rate_model.simulate_rates(N, self.grid, r0, self.rng)
         return self._rates_paths
 
     def _simulate_bank_credit(self, N: int) -> tuple[np.ndarray, np.ndarray]:
         """
-        Return (PD_bank_mean, S_bank_mean), each shape (K+1,).
+        Renvoie (PD_bank_mean, S_bank_mean), chacun de shape (K+1,).
+        Les grandeurs sont moyennées sur les N scénarios.
         """
         if self._bank_PD is not None and self._bank_S is not None:
             return self._bank_PD, self._bank_S
@@ -61,47 +62,48 @@ class Simulator:
         self._bank_S  = S_b.mean(axis=0)
         return self._bank_PD, self._bank_S
 
-    # ---------- public API ----------------------------------------------------
+    # ---------- API publique --------------------------------------------------
 
     def run_for_counterparty(self, cpty: Counterparty, N: int) -> Dict[str, Any]:
         """
-        Run the full pipeline for a single counterparty.
+        Exécute tout le pipeline pour une contrepartie.
 
-        Returns a dict with:
+        Retourne un dict avec :
           - 'cid', 'LGD_cpty', 'LGD_bank'
           - 'DF' (K+1,), 'EPE', 'ENE', 'PD_cpty', 'S_cpty', 'PD_bank'
           - 'CVA_leg', 'DVA_leg', 'CVA', 'DVA'
         """
         Kp1 = self.grid.K + 1
 
-        # 1) Rates
+        # 1) Taux : une simulation HW++ (mise en cache, partagée entre contreparties)
         r0 = self.zc_pricer.ts.inst_forward(0.0)  # cohérent HW++ à t=0
         rates = self._ensure_rate_paths(N, r0)     # (N, K+1)
 
-        # 2) Discount factors on grid
+        # 2) Facteurs d’actualisation DF(0,t_k) sur la grille
         DF = self.df_curve_on_grid.values()        # (K+1,)
 
-        # 3) Credit
+        # 3) Crédit contrepartie : Log-OU indépendant, puis moyenne sur scénarios
         lou_i = cpty.make_model()
         lam_i, S_i, PD_i = lou_i.simulate(N, self.grid, self.rng)
         PD_cpty = PD_i.mean(axis=0)                # (K+1,)
         S_cpty  = S_i.mean(axis=0)                 # (K+1,)
 
+        # Crédit banque : simulé une fois (cache) puis réutilisé
         PD_bank, S_bank = self._simulate_bank_credit(N)   # (K+1,), (K+1,)
 
-        # 4) Exposure
+        # 4) Exposition : EPE/ENE à partir des chemins de taux + pricer ZC
         engine = ExposureEngine(self.zc_pricer)
         EPE, ENE = engine.epe_ene(rates, self.grid, cpty.swap)  # (K+1,)
 
-        # 5) CVA / DVA
+        # 5) CVA / DVA : agrégation par buckets (marges non conditionnelles)
         cvares = CVAEngine.compute_all(
             DF=DF,
             LGD_cpty=cpty.LGD,
             LGD_bank=self.bank.LGD,
             EPE=EPE,
             ENE=ENE,
-            PD_cpty=PD_cpty,     # marginale non conditionnelle
-            PD_bank=PD_bank,     # marginale non conditionnelle
+            PD_cpty=PD_cpty,     # PD marginale non conditionnelle
+            PD_bank=PD_bank,     # PD marginale non conditionnelle
             S_cpty=S_cpty,       # survie cpty (le moteur décalera S_{k-1})
         )
 
@@ -117,19 +119,19 @@ class Simulator:
 
     def run_portfolio(self, counterparties: List[Counterparty], N: int) -> Dict[str, Any]:
         """
-        Run for all counterparties and produce aggregated totals.
+        Exécute le pipeline pour toutes les contreparties et calcule des totaux agrégés.
 
-        Returns
+        Retourne
         -------
-        dict with:
-          - 'per_counterparty': list of dicts (see run_for_counterparty)
-          - 'totals': {'CVA_total', 'DVA_total', 'CVA_legs_sum', 'DVA_legs_sum'}
-          - 'meta': {'N', 'Kp1'}
+        dict avec :
+          - 'per_counterparty' : liste de dicts (voir run_for_counterparty)
+          - 'totals' : {'CVA_total', 'DVA_total', 'CVA_legs_sum', 'DVA_legs_sum', 'DF'}
+          - 'meta'   : {'N', 'Kp1', 'n_counterparties'}
         """
         if len(counterparties) == 0:
-            raise ValueError("run_portfolio: empty counterparties list")
+            raise ValueError("run_portfolio: liste des contreparties vide")
 
-        # Force generation of rates + bank credit once
+        # On force la génération des taux + crédit banque une seule fois
         r0 = self.zc_pricer.ts.inst_forward(0.0)
         self._ensure_rate_paths(N, r0)
         self._simulate_bank_credit(N)
@@ -145,8 +147,12 @@ class Simulator:
         for c in counterparties:
             res = self.run_for_counterparty(c, N)
             per_cpty.append(res)
+
+            # Agrégation des jambes (bucket par bucket)
             cva_legs_sum += res["CVA_leg"]
             dva_legs_sum += res["DVA_leg"]
+
+            # Agrégation des scalaires
             CVA_total += res["CVA"]
             DVA_total += res["DVA"]
 
@@ -159,6 +165,5 @@ class Simulator:
                 "DVA_legs_sum": dva_legs_sum,
                 "DF": DF,
             },
-            "meta": {"N": N, "Kp1": Kp1, "n_counterparties": len(counterparties),
-},
+            "meta": {"N": N, "Kp1": Kp1, "n_counterparties": len(counterparties)},
         }

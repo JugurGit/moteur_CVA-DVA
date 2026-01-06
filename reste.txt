@@ -24,7 +24,6 @@
 2.12.2 Cap = somme caplets (déjà implicite)
 2.12.3 Swaption payer/receiver parity
 2.13 inclure la démonstration du passage entre le hull and white 1F classique vers une forme OU "propre" dans la documentation et dans les annexes du rapport de stage
-2.14 si j ai le temps, voir si il serait possible de faire la valorisation du swap via dual courbe (chiant a faire mais voir quand même)
 
 3. rapport de stage 
 3.1 modifier le contenu, le raccourcir et enlever les doublons superflus 
@@ -48,15 +47,6 @@
 4. support soutenance 
 4.1 modifier les diapos de soutenance : enlever quelques diapos trop explicatives et rajouter des graphiques ou autre pour que ça fasse plus concret (demander a chatgpt)
 
-5. crédit 
-5.1 voir si il est possible d inclure une fonctionnalité calculant les sensis expo, default et reste 
-
-6. FRTB GIRR
-6.1 voir si il est possible de faire un moteur de calcul GIRR et Equity
-6.2 simulation de plusieurs portefeuilles intégrant toutes les étapes de calcul des capitaux RWA 
-6.3 voir si possible de faire une interface pour le moteur en tailwind CSS + react + next.js
-
 7. videos de presentation 
 7.1 présentation orale (remake de la soutenance) avec montage simpliste et publication sur youtube en vidéo privée 
 7.2 présentation orale de chacun des projets (en maximum 5 minutes par projet)
-7.3 chercher un logiciel de montage (voir si canva premium peut faire le minimum que je recherche (video de moi sur le coté))

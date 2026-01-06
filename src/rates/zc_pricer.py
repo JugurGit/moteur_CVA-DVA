@@ -1,15 +1,17 @@
 """
-Zero-coupon pricer under HW1F++:
+Pricer de zéro-coupon sous HW1F++ :
 
 P(t,T) = A(t,T) * exp( -B(t,T) * r_t ),
-with
+
+avec
   B(t,T) = (1 - e^{-kappa (T - t)}) / kappa,
   ln A(t,T) = - ∫_t^T theta(s) * (1 - e^{-kappa (T - s)}) ds  +  0.5 * Var(∫_t^T r_u du),
 
-and for an OU short rate,
-  Var(∫_t^T r_u du) = (sigma^2 / (2 kappa^3)) * ( 2 kappa Δ + 4 e^{-kappa Δ} - e^{-2 kappa Δ} - 3 ), Δ = T - t.
+et pour un taux court de type OU,
+  Var(∫_t^T r_u du) = (sigma^2 / (2 kappa^3)) * ( 2 kappa Δ + 4 e^{-kappa Δ} - e^{-2 kappa Δ} - 3 ),
+  où Δ = T - t.
 
-We compute the integral with a small adaptive trapezoidal rule (accurate and robust).
+On calcule l’intégrale avec une règle des trapèzes (pas adaptatif), pour rester précis et robuste.
 """
 
 from __future__ import annotations
@@ -25,9 +27,9 @@ from .termstructure.base_curve import TermStructure
 @dataclass
 class ZCAnalyticHW:
     hw: HW1FModel
-    ts: TermStructure   # kept in case you want quick DF(0,T), not strictly required
+    ts: TermStructure  
 
-    # ---- Core affine functions ----------------------------------------------
+    # ---- Fonctions affines de base ------------------------------------------
 
     def B(self, t: float, T: float) -> float:
         a = self.hw.kappa
@@ -35,11 +37,11 @@ class ZCAnalyticHW:
             raise ValueError("B(t,T): requires T >= t")
         Δ = T - t
         if a == 0:
-            return Δ  # limit case
+            return Δ  
         return (1.0 - np.exp(-a * Δ)) / a
 
     def var_integrated_ou(self, delta: float) -> float:
-        """Var( ∫_0^Δ r_u du ) for an OU short-rate's *noise* part; depends only on Δ."""
+        """Variance de ∫_0^Δ r_u du pour la partie *bruit* d’un OU ; dépend uniquement de Δ."""
         a, sig = self.hw.kappa, self.hw.sigma
         if delta <= 0.0:
             return 0.0
@@ -50,22 +52,29 @@ class ZCAnalyticHW:
     def _integral_theta_weighted(self, t: float, T: float) -> float:
         """
         I(t,T) = ∫_t^T theta(s) * (1 - e^{-kappa (T - s)}) ds
-        Composite trapèze avec pas adaptatif en fonction de Δ = T - t.
+
+        Intégrale "theta pondérée" qui intervient dans ln A(t,T).
+        On l’évalue par une règle des trapèzes avec un nombre de sous-pas
+        qui augmente avec Δ = T - t.
         """
         if self.hw.theta_fn is None:
-            raise RuntimeError("ZCAnalyticHW: theta_fn not set on HW model.")
+            raise RuntimeError("ZCAnalyticHW: theta_fn n'est pas dans HW model.")
         if T <= t:
             return 0.0
 
         a = self.hw.kappa
         Δ = T - t
-        # plus Δ est grand, plus on raffine :  ~80 sous-pas par année (ajuste si besoin)
+
         n = int(max(64, np.ceil(80.0 * Δ)))
         grid = np.linspace(t, T, n + 1)
-        weights = 1.0 - np.exp(-a * (T - grid))
-        theta_vals = np.array([self.hw.theta_fn(s) for s in grid], dtype=float)
-        return float(np.trapz(theta_vals * weights, grid))
 
+        # Poids (1 - exp(-kappa (T - s))) évalués sur la grille
+        weights = 1.0 - np.exp(-a * (T - grid))
+
+        # Theta évalué sur la grille
+        theta_vals = np.array([self.hw.theta_fn(s) for s in grid], dtype=float)
+
+        return float(np.trapz(theta_vals * weights, grid))
 
     def A(self, t: float, T: float) -> float:
         if T < t:
@@ -76,15 +85,14 @@ class ZCAnalyticHW:
         lnA = - I + 0.5 * var_I
         return float(np.exp(lnA))
 
-    # ---- Bond price ----------------------------------------------------------
+    # ---- Prix du bond --------------------------------------------------------
 
     def P(self, t: float, r_t: float, T: float) -> float:
-        """Zero-coupon price P(t,T) under HW1F++."""
-        # SPECIAL CASE: exact recollage at t=0
+        """Prix du zéro-coupon P(t,T) sous HW1F++."""
+        # CAS PARTICULIER : recollage exact à t=0 via la courbe initiale
         if abs(t) < 1e-14:
             return float(self.ts.discount_factor(T))
         return self.A(t, T) * np.exp(-self.B(t, T) * r_t)
-
 
     def P_vector(self, t: float, r_t: float, T_list: Iterable[float]) -> np.ndarray:
         T_arr = np.asarray(list(T_list), dtype=float)

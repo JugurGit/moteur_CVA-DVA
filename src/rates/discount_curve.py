@@ -20,37 +20,37 @@ class DiscountCurve:
         self.mode = mode
         if mode == "flat":
             if flat_zero_rate is None:
-                raise ValueError("flat_zero_rate required for flat curve")
+                raise ValueError("flat_zero_rate requise pour la flat curve")
             if flat_zero_rate < -0.005:  # tolérance petits taux négatifs
-                raise ValueError("flat_zero_rate seems too negative")
+                raise ValueError("flat_zero_rate semble être trop negative")
             self.z = float(flat_zero_rate)
             self._t_knots = np.array([0.0])
             self._df_knots = np.array([1.0])
         elif mode == "points":
             if not points:
-                raise ValueError("points required for points curve")
+                raise ValueError("les points requis pour la courbe")
             pts = np.array(points, dtype=float)
             if pts.ndim != 2 or pts.shape[1] != 2:
-                raise ValueError("points must be sequence of (t, df)")
+                raise ValueError("les points doivent être sous forme de liste tel que (t, df)")
             # tri par maturité
             pts = pts[np.argsort(pts[:, 0])]
             if pts[0, 0] < 0:
-                raise ValueError("negative maturities not allowed")
+                raise ValueError("maturités négatives ne sont pas autorisés")
             # ajout (0,1) si absent
             if pts[0, 0] > 0.0:
                 pts = np.vstack([[0.0, 1.0], pts])
             # contrôles DF
             if not np.all(pts[:, 1] > 0):
-                raise ValueError("all discount factors must be > 0")
+                raise ValueError("tous les facteurs d'actualisation doivent être > 0")
             self._t_knots = pts[:, 0]
             self._df_knots = pts[:, 1]
         else:
-            raise ValueError("mode must be 'flat' or 'points'")
+            raise ValueError("mode doit être 'flat' ou 'points'")
 
     def df0(self, t: float) -> float:
         """DF(0,t)."""
         if t < 0:
-            raise ValueError("t must be >= 0")
+            raise ValueError("t doit être >= 0")
         if t == 0:
             return 1.0
         if self.mode == "flat":
@@ -83,5 +83,4 @@ class DiscountCurve:
         if t <= 0:
             return self.z if self.mode == "flat" else 0.0
         df = self.df0(t)
-        # évite division par zéro si df≈1 et t très petit
         return -math.log(df) / t
