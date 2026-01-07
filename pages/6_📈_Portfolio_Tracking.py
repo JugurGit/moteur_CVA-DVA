@@ -40,7 +40,7 @@ st.divider()
 # -----------------------------
 # Ranking table (current run)
 # -----------------------------
-st.subheader("🏁 Portfolio ranking (par contrepartie)")
+st.subheader("🏁 Portfolio (par contrepartie)")
 
 df = load_portfolio_table(str(outdir))
 if df.empty:
@@ -74,7 +74,7 @@ st.dataframe(
 )
 
 # Charts top N
-st.markdown("#### 📊 Top movers (current run)")
+st.markdown("#### 📊 Top CVA/DVA (run courant)")
 df_top = df_view.head(topn)
 
 cA, cB = st.columns(2)
@@ -84,7 +84,7 @@ with cA:
     st.bar_chart(chart)
 
 with cB:
-    st.write("Scatter CVA vs DVA")
+    st.write("CVA vs DVA")
     df_sc = df_view[["cid", "CVA", "DVA"]].copy()
     st.dataframe(df_sc.head(topn), use_container_width=True)
 
@@ -101,7 +101,7 @@ st.divider()
 # -----------------------------
 # Compare run vs run (deltas)
 # -----------------------------
-st.subheader("🔁 Compare run vs run (Δ par contrepartie)")
+st.subheader("🔁 Comparatif run vs run (Δ par contrepartie)")
 
 other_runs = [r for r in runs if r != outdir.name]
 if not other_runs:
