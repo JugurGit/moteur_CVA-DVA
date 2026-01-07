@@ -11,7 +11,6 @@ Dashboard Streamlit multi-pages qui expose une **démo pédagogique** d’un mot
 > ⚠️ Projet à but illustratif : les modèles, paramètres et données “demo” sont simplifiés et ne constituent pas un moteur de production.
 
 👉 Démo en ligne : **https://boudarene-moteurcvadva.streamlit.app/**
-
 ---
 
 ## 1) Prérequis
