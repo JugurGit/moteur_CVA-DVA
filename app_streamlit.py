@@ -89,16 +89,6 @@ structurer un calcul XVA avec des inputs maîtrisés, des sorties traçables, et
     icon="✅",
 )
 
-with st.expander("🔎 Comment j’ai structuré l’approche (logique “production / audit”)", expanded=False):
-    st.markdown(
-        """
-- **Séparation des responsabilités** : modèles/simulation (lib) vs **UI** (Streamlit) vs **stockage** (runs, snapshots).
-- **Chaîne calcul claire** : scénarios → expositions → legs CVA/DVA → agrégation → export.
-- **Explainability** : décomposition **Shapley** pour relier un total CVA/DVA à ses principaux contributeurs.
-"""
-    )
-
-st.divider()
 
 # ---------------------------------------------------------------------
 # 3) Navigation (comme ton app.py FRTB / IR Lab)
